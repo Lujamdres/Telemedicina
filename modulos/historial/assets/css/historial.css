@@ -1,0 +1,66 @@
+.historial-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.record-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  border-left: 5px solid var(--primary);
+  transition: transform 0.2s;
+}
+
+.record-card:hover {
+  transform: translateX(5px);
+}
+
+.record-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.record-date {
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.record-section {
+  margin-bottom: 1rem;
+}
+
+.record-section h4 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+  letter-spacing: 0.5px;
+}
+
+.record-section p {
+  color: #334155;
+  line-height: 1.5;
+}
+
+.form-historial {
+  background: rgba(79, 70, 229, 0.05);
+  padding: 2rem;
+  border-radius: 12px;
+  margin-top: 2rem;
+  border: 1px dashed var(--primary);
+}
+
+.badge-doctor {
+  background: #e0e7ff;
+  color: var(--primary);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
