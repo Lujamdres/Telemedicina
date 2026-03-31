@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LoadingView from '../../../assets/js/LoadingView.jsx';
 import MedConnectLogo from '../../../assets/js/MedConnectLogo.jsx';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../assets/js/apiConfig.js';
 import { setToken } from '../../../assets/js/authSession';
 import Swal from 'sweetalert2';
 
@@ -21,7 +21,7 @@ const Login = () => {
         setError('');
         setSubmitting(true);
         try {
-            const response = await axios.post('/api/auth/login', credentials);
+            const response = await api.post('/api/auth/login', credentials);
             if (response.data.success) {
                 setToken(response.data.token);
                 navigate('/dashboard');
