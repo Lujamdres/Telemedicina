@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { createMedicalRecord, getPatientHistory } = require('./historial.controller');
+const { createMedicalRecord, getPatientHistory, listPacientesAtendidosMedico } = require('./historial.controller');
 const { verifyToken, requireRole } = require('../../../core/middlewares/auth.middleware');
 
 // Configuración de almacenamiento local para los PDF o Imágenes
@@ -18,6 +18,7 @@ const upload = multer({ storage: storage });
 
 // Rutas de Historial Médico (La ruta POST usa Multer para analizar los datos pesados y el archivo)
 router.post('/', verifyToken, requireRole('Medico'), upload.single('archivo'), createMedicalRecord);
+router.get('/mis-pacientes', verifyToken, requireRole('Medico'), listPacientesAtendidosMedico);
 router.get('/paciente/:id', verifyToken, getPatientHistory);
 
 module.exports = router;

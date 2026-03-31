@@ -1,5 +1,6 @@
 const MedicalRecord = require('../data/MedicalRecord.model');
 const User = require('../../auth/data/User.model');
+const Appointment = require('../../citas/data/Appointment.model');
 
 // @desc    Crear un nuevo registro médico
 // @route   POST /api/historial
@@ -56,6 +57,23 @@ const getPatientHistory = async (req, res) => {
             return res.status(403).json({ success: false, message: 'Acceso denegado a historiales ajenos' });
         }
 
+        if (req.user.role === 'Medico') {
+            const tuvoCita = await Appointment.exists({
+                medico: req.user.id,
+                paciente: pacienteId
+            });
+            const tieneRegistro = await MedicalRecord.exists({
+                medicoId: req.user.id,
+                pacienteId
+            });
+            if (!tuvoCita && !tieneRegistro) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'No tienes historial compartido con este paciente'
+                });
+            }
+        }
+
         const historiales = await MedicalRecord.find({ pacienteId })
             .populate('medicoId', 'nombre apellido especialidad')
             .sort({ createdAt: -1 });
@@ -66,7 +84,46 @@ const getPatientHistory = async (req, res) => {
     }
 };
 
+/** Pacientes con cita completada o registro clínico creado por este médico */
+const listPacientesAtendidosMedico = async (req, res) => {
+    try {
+        if (req.user.role !== 'Medico') {
+            return res.status(403).json({ success: false, message: 'Solo médicos pueden consultar este listado' });
+        }
+
+        const medicoId = req.user.id;
+
+        const idsCitas = await Appointment.distinct('paciente', {
+            medico: medicoId,
+            estado: 'Completada'
+        });
+
+        const idsHistorial = await MedicalRecord.distinct('pacienteId', {
+            medicoId
+        });
+
+        const idSet = new Set([...idsCitas.map(String), ...idsHistorial.map(String)].filter(Boolean));
+
+        if (idSet.size === 0) {
+            return res.json({ success: true, count: 0, data: [] });
+        }
+
+        const pacientes = await User.find({
+            _id: { $in: [...idSet] },
+            role: 'Paciente'
+        })
+            .select('nombre apellido email telefono')
+            .sort({ apellido: 1, nombre: 1 })
+            .lean();
+
+        res.json({ success: true, count: pacientes.length, data: pacientes });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 module.exports = {
     createMedicalRecord,
-    getPatientHistory
+    getPatientHistory,
+    listPacientesAtendidosMedico
 };

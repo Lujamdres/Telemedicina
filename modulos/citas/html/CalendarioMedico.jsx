@@ -2,7 +2,10 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getToken, removeToken } from '../../../assets/js/authSession';
-import { io } from 'socket.io-client';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
+import { createAppSocket } from '../../../assets/js/socketClient';
+import MedicoSidebar from './MedicoSidebar.jsx';
+import '../assets/css/medico-layout.css';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
 import '../assets/css/citas.css';
@@ -128,7 +131,7 @@ const CalendarioMedico = () => {
     useEffect(() => {
         if (!token || loading || !user || user.role !== 'Medico') return undefined;
 
-        const socket = io('/', { transports: ['websocket', 'polling'] });
+        const socket = createAppSocket();
         const joinDashboard = () => socket.emit('dashboard-join', { token });
         const refreshCitas = () => {
             axios
@@ -190,18 +193,25 @@ const CalendarioMedico = () => {
     };
 
     if (loading) {
-        return <div className="empty-state calendario-medico-loading">Cargando calendario…</div>;
+        return (
+            <div className="medico-app-layout">
+                <MedicoSidebar />
+                <div className="medico-app-main">
+                    <LoadingView variant="embedded" message="Cargando calendario…" />
+                </div>
+            </div>
+        );
     }
 
     const todayKey = localDayKey(new Date());
 
     return (
+        <div className="medico-app-layout">
+            <MedicoSidebar />
+            <div className="medico-app-main">
         <div className="calendario-medico-page">
             <header className="calendario-medico-header">
                 <div>
-                    <button type="button" className="btn btn-secondary btn-sm-auto calendario-back" onClick={() => navigate('/dashboard')}>
-                        Volver al panel
-                    </button>
                     <h1 className="title-primary calendario-title">Calendario de citas</h1>
                     <p className="text-subtle">Citas pendientes, agendadas y completadas por día. Pulsa un día para ver el detalle.</p>
                 </div>
@@ -360,6 +370,8 @@ const CalendarioMedico = () => {
                     </div>
                 </div>
             )}
+        </div>
+            </div>
         </div>
     );
 };

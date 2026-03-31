@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
+import MedConnectLogo from '../../../assets/js/MedConnectLogo.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
@@ -39,6 +41,7 @@ const Register = () => {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -54,6 +57,7 @@ const Register = () => {
                 return;
             }
 
+            setSubmitting(true);
             const res = await axios.post('/api/auth/register', { nombre, apellido, email, password, role, especialidad });
             setToken(res.data.token);
 
@@ -67,7 +71,6 @@ const Register = () => {
             }).then(() => {
                 navigate('/dashboard');
             });
-
         } catch (err) {
             Swal.fire({
                 icon: 'error',
@@ -75,94 +78,103 @@ const Register = () => {
                 text: err.response?.data?.message || 'Hubo un problema al crear la cuenta',
                 confirmButtonColor: '#e74c3c'
             });
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
         <div className="auth-container">
-            <div className="auth-box">
-                <h2>Registro de Usuario</h2>
-                <form onSubmit={handleSubmit}>
-                    <div className="form-group">
-                        <label>Nombre</label>
-                        <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Apellido</label>
-                        <input type="text" name="apellido" value={formData.apellido} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Email</label>
-                        <input type="email" name="email" value={formData.email} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="register-password">Contraseña</label>
-                        <div className="password-input-wrap">
-                            <input
-                                id="register-password"
-                                type={showPassword ? 'text' : 'password'}
-                                name="password"
-                                value={formData.password}
-                                onChange={handleChange}
-                                required
-                                autoComplete="new-password"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                aria-pressed={showPassword}
-                                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setShowPassword((v) => !v);
-                                }}
-                            >
-                                {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label htmlFor="register-confirm-password">Confirmar contraseña</label>
-                        <div className="password-input-wrap">
-                            <input
-                                id="register-confirm-password"
-                                type={showConfirmPassword ? 'text' : 'password'}
-                                name="confirmPassword"
-                                value={formData.confirmPassword}
-                                onChange={handleChange}
-                                required
-                                autoComplete="new-password"
-                            />
-                            <button
-                                type="button"
-                                className="password-toggle"
-                                aria-pressed={showConfirmPassword}
-                                aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    setShowConfirmPassword((v) => !v);
-                                }}
-                            >
-                                {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
-                            </button>
-                        </div>
-                    </div>
-                    <div className="form-group">
-                        <label>Rol</label>
-                        <select name="role" value={formData.role} onChange={handleChange}>
-                            <option value="Paciente">Paciente</option>
-                            <option value="Medico">Médico</option>
-                        </select>
-                    </div>
-                    {formData.role === 'Medico' && (
+            {submitting && <LoadingView variant="overlay" message="Creando cuenta…" />}
+            <div className="auth-layout">
+                <aside className="auth-brand-panel">
+                    <MedConnectLogo variant="hero" />
+                    <p className="auth-tagline">Crea tu cuenta y accede a videoconsultas y tu historial clínico.</p>
+                </aside>
+                <div className="auth-box auth-box--form auth-box--register glass-panel">
+                    <h2>Registro de Usuario</h2>
+                    <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label>Especialidad</label>
-                            <input type="text" name="especialidad" value={formData.especialidad} onChange={handleChange} required />
+                            <label>Nombre</label>
+                            <input type="text" name="nombre" value={formData.nombre} onChange={handleChange} required />
                         </div>
-                    )}
-                    <button type="submit" className="btn">Registrarse</button>
-                </form>
-                <Link to="/login" className="auth-link">¿Ya tienes cuenta? Inicia sesión</Link>
+                        <div className="form-group">
+                            <label>Apellido</label>
+                            <input type="text" name="apellido" value={formData.apellido} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" value={formData.email} onChange={handleChange} required />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="register-password">Contraseña</label>
+                            <div className="password-input-wrap">
+                                <input
+                                    id="register-password"
+                                    type={showPassword ? 'text' : 'password'}
+                                    name="password"
+                                    value={formData.password}
+                                    onChange={handleChange}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                                <button
+                                    type="button"
+                                    className="password-toggle"
+                                    aria-pressed={showPassword}
+                                    aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setShowPassword((v) => !v);
+                                    }}
+                                >
+                                    {showPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="register-confirm-password">Confirmar contraseña</label>
+                            <div className="password-input-wrap">
+                                <input
+                                    id="register-confirm-password"
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    name="confirmPassword"
+                                    value={formData.confirmPassword}
+                                    onChange={handleChange}
+                                    required
+                                    autoComplete="new-password"
+                                />
+                                <button
+                                    type="button"
+                                    className="password-toggle"
+                                    aria-pressed={showConfirmPassword}
+                                    aria-label={showConfirmPassword ? 'Ocultar confirmación de contraseña' : 'Mostrar confirmación de contraseña'}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setShowConfirmPassword((v) => !v);
+                                    }}
+                                >
+                                    {showConfirmPassword ? <IconEyeClosed /> : <IconEyeOpen />}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Rol</label>
+                            <select name="role" value={formData.role} onChange={handleChange}>
+                                <option value="Paciente">Paciente</option>
+                                <option value="Medico">Médico</option>
+                            </select>
+                        </div>
+                        {formData.role === 'Medico' && (
+                            <div className="form-group">
+                                <label>Especialidad</label>
+                                <input type="text" name="especialidad" value={formData.especialidad} onChange={handleChange} required />
+                            </div>
+                        )}
+                        <button type="submit" className="btn">Registrarse</button>
+                    </form>
+                    <Link to="/login" className="auth-link">¿Ya tienes cuenta? Inicia sesión</Link>
+                </div>
             </div>
         </div>
     );

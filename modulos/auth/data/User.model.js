@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema({
     telefono: {
         type: String,
     },
+    /** URL pública servida bajo /uploads/avatars/... */
+    fotoPerfil: {
+        type: String,
+    },
 }, {
     timestamps: true
 });

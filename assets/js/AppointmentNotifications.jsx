@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { io } from 'socket.io-client';
 import { playNotificationSound } from './notificationSounds';
 import { getToken } from './authSession';
+import { createAppSocket } from './socketClient';
 
 const STORAGE_T10 = 'notif-cita-t10-';
 const STORAGE_T0 = 'notif-cita-t0-';
@@ -192,7 +192,7 @@ export default function AppointmentNotifications() {
         run();
         const poll = setInterval(run, 15000);
 
-        const socket = io('/', { transports: ['websocket', 'polling'] });
+        const socket = createAppSocket();
 
         const join = () => {
             socket.emit('dashboard-join', { token });

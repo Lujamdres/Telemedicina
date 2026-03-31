@@ -1,0 +1,42 @@
+.historial-citas-page .historial-citas-hint {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin-top: 0.35rem;
+}
+
+.historial-citas-table-wrap {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.historial-citas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.historial-citas-table th,
+.historial-citas-table td {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.historial-citas-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.historial-citas-table tbody tr.historial-citas-row--clickable {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.historial-citas-table tbody tr.historial-citas-row--clickable:hover {
+  background: var(--btn-secondary-hover);
+}
+
+html[data-theme='dark'] .historial-citas-table tbody tr.historial-citas-row--clickable:hover {
+  background: rgba(51, 65, 85, 0.45);
+}

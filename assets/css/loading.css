@@ -1,0 +1,122 @@
+/* Vista de carga unificada (accesible: role=status, texto visible) */
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.app-loading--fullscreen {
+  min-height: 100vh;
+  padding: 2rem 1rem;
+}
+
+.app-loading--embedded {
+  flex: 1;
+  min-height: min(70vh, 520px);
+  padding: 2rem 1rem;
+}
+
+.app-loading--compact {
+  min-height: 200px;
+  padding: 2rem 1.5rem;
+}
+
+.app-loading--overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  min-height: 100vh;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 1rem;
+}
+
+html[data-theme='dark'] .app-loading--overlay {
+  background: rgba(2, 6, 23, 0.65);
+}
+
+.app-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  text-align: center;
+  max-width: 22rem;
+}
+
+.app-loading-spinner-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.app-loading--compact .app-loading-spinner-wrap {
+  width: 40px;
+  height: 40px;
+}
+
+.app-loading-spinner {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid var(--card-border);
+  border-top-color: var(--primary);
+  animation: app-loading-spin 0.9s linear infinite;
+}
+
+.app-loading-spinner--orbit {
+  inset: 6px;
+  border-width: 2px;
+  border-top-color: var(--secondary);
+  animation-direction: reverse;
+  animation-duration: 1.2s;
+  opacity: 0.85;
+}
+
+.app-loading--compact .app-loading-spinner--orbit {
+  inset: 4px;
+}
+
+@keyframes app-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.app-loading-message {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  letter-spacing: 0.02em;
+  animation: app-loading-fade 1.8s ease-in-out infinite;
+}
+
+.app-loading--overlay .app-loading-message {
+  color: #f8fafc;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes app-loading-fade {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-spinner,
+  .app-loading-spinner--orbit {
+    animation-duration: 2s;
+  }
+  .app-loading-message {
+    animation: none;
+    opacity: 1;
+  }
+}

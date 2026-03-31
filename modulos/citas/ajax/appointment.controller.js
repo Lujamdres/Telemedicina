@@ -20,6 +20,20 @@ async function markAsPerdidaIfNeeded(appointment) {
         appointment.estado = 'Agendada';
         await appointment.save();
     }
+
+    /** Solicitud sin confirmar: la hora propuesta ya pasó y no pasó a Agendada/Programada. */
+    if (appointment.estado === 'Pendiente') {
+        const citaMs = new Date(appointment.fechaHora).getTime();
+        if (Number.isNaN(citaMs)) return false;
+        if (Date.now() > citaMs) {
+            appointment.estado = 'Perdida';
+            appointment.perdidaPorAusenciaDe = 'Medico';
+            await appointment.save();
+            return true;
+        }
+        return false;
+    }
+
     if (appointment.estado !== 'Agendada') return false;
     const now = Date.now();
     if (appointment.esperaExtendidaHasta) {
@@ -108,6 +122,17 @@ const createAppointment = async (req, res) => {
         const bounds = slotMinuteBounds(fechaHora);
         if (!bounds) {
             return res.status(400).json({ success: false, message: 'fechaHora no es válida' });
+        }
+
+        const cuando = new Date(fechaHora);
+        if (Number.isNaN(cuando.getTime())) {
+            return res.status(400).json({ success: false, message: 'fechaHora no es válida' });
+        }
+        if (cuando.getTime() <= Date.now()) {
+            return res.status(400).json({
+                success: false,
+                message: 'La fecha y hora de la cita debe ser posterior al momento actual.'
+            });
         }
 
         const conflict = await findMedicoSlotConflict(medicoId, fechaHora);
@@ -202,11 +227,12 @@ const completeAppointment = async (req, res) => {
         if (req.user.role === 'Medico' && String(appointment.medico) !== String(req.user.id)) {
             return res.status(403).json({ success: false, message: 'No puedes completar una cita asignada a otro médico' });
         }
-        if (appointment.estado !== 'Agendada') {
-            return res.status(400).json({ success: false, message: 'Solo se pueden completar citas agendadas' });
+        if (!['Agendada', 'Programada'].includes(appointment.estado)) {
+            return res.status(400).json({ success: false, message: 'Solo se pueden completar citas confirmadas' });
         }
 
         appointment.estado = 'Completada';
+        appointment.markVideollamadaFinIfCompleted();
         await appointment.save();
         notifyCitasRefresh(req, [appointment.medico, appointment.paciente]);
         res.json({ success: true, data: appointment });
@@ -282,6 +308,42 @@ const extendVideoWait = async (req, res) => {
     }
 };
 
+const getHistorialCompletadas = async (req, res) => {
+    try {
+        if (!['Medico', 'Paciente'].includes(req.user.role)) {
+            return res.status(403).json({ success: false, message: 'Solo pacientes o médicos pueden ver este historial' });
+        }
+
+        const filter = { estado: 'Completada' };
+        if (req.user.role === 'Paciente') {
+            filter.paciente = req.user.id;
+        } else {
+            filter.medico = req.user.id;
+        }
+
+        const appointments = await Appointment.find(filter)
+            .populate('paciente', 'nombre apellido email telefono role')
+            .populate('medico', 'nombre apellido email especialidad role')
+            .sort({ fechaHora: -1 });
+
+        const data = appointments.map((a) => {
+            const o = a.toObject();
+            let duracionSegundos = null;
+            if (o.videollamadaInicioAt && o.videollamadaFinAt) {
+                const d = (new Date(o.videollamadaFinAt) - new Date(o.videollamadaInicioAt)) / 1000;
+                if (!Number.isNaN(d) && d >= 0) {
+                    duracionSegundos = Math.round(d);
+                }
+            }
+            return { ...o, duracionSegundos };
+        });
+
+        res.json({ success: true, count: data.length, data });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const getAppointmentByRoom = async (req, res) => {
     try {
         const { roomId } = req.params;
@@ -304,6 +366,7 @@ const getAppointmentByRoom = async (req, res) => {
 module.exports = {
     createAppointment,
     getMyAppointments,
+    getHistorialCompletadas,
     acceptAppointment,
     completeAppointment,
     cancelAppointment,

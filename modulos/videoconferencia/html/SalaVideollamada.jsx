@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getToken } from '../../../assets/js/authSession';
-import { io } from 'socket.io-client';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
+import { createAppSocket } from '../../../assets/js/socketClient';
 import Swal from 'sweetalert2';
 import '../assets/css/videoconferencia.css';
 
@@ -38,6 +39,10 @@ const SalaVideollamada = () => {
     const [appointment, setAppointment] = useState(null);
     const [absenceText, setAbsenceText] = useState('');
     const [extendedWaitRemainingMs, setExtendedWaitRemainingMs] = useState(null);
+    const [recetaModalOpen, setRecetaModalOpen] = useState(false);
+    const [recetaTexto, setRecetaTexto] = useState('');
+    const [recetaSending, setRecetaSending] = useState(false);
+    const [sessionReady, setSessionReady] = useState(false);
 
     appointmentRef.current = appointment;
     myProfileRef.current = myProfile;
@@ -119,7 +124,7 @@ const SalaVideollamada = () => {
             return undefined;
         }
 
-        socketRef.current = io('/', { transports: ['websocket', 'polling'] });
+        socketRef.current = createAppSocket();
         const currentSocket = socketRef.current;
 
         const initWebRTC = async () => {
@@ -127,15 +132,17 @@ const SalaVideollamada = () => {
                 const resProfile = await axios.get('/api/auth/profile', { headers: { Authorization: `Bearer ${token}` } });
                 setMyProfile(resProfile.data.data);
 
+                await loadAppointment();
+
                 const localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = localStream;
                 }
-                setStreamStatus('Esperando al especialista o al paciente...');
+                setStreamStatus('Esperando al especialista o al paciente…');
+                setSessionReady(true);
 
                 currentSocket.emit('join-room', { roomId, token });
 
-                await loadAppointment();
                 appointmentPollRef.current = setInterval(loadAppointment, 15000);
 
                 currentSocket.on('appointment-completed', () => {
@@ -199,6 +206,7 @@ const SalaVideollamada = () => {
             } catch (err) {
                 console.error('Error al acceder a dispositivos:', err);
                 setStreamStatus('Error: permisos de cámara o micrófono denegados o dispositivo ausente.');
+                setSessionReady(true);
             }
         };
 
@@ -364,6 +372,46 @@ const SalaVideollamada = () => {
         navigate('/dashboard');
     };
 
+    const puedeEmitirReceta =
+        myProfile?.role === 'Medico' &&
+        appointment?._id &&
+        ['Agendada', 'Programada', 'Completada'].includes(appointment?.estado);
+
+    const handleEnviarReceta = async (e) => {
+        e.preventDefault();
+        const texto = recetaTexto.trim();
+        if (texto.length < 8) {
+            Swal.fire({ icon: 'warning', title: 'Completa la receta', text: 'Escribe al menos 8 caracteres.' });
+            return;
+        }
+        const token = getToken();
+        if (!token || !appointment?._id) return;
+        setRecetaSending(true);
+        try {
+            await axios.post(
+                '/api/recetas',
+                { appointmentId: appointment._id, contenido: texto },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            await Swal.fire({
+                icon: 'success',
+                title: 'Receta enviada',
+                text: 'El paciente la verá en «Mis recetas».',
+                confirmButtonColor: '#4f46e5'
+            });
+            setRecetaModalOpen(false);
+            setRecetaTexto('');
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'No se pudo enviar',
+                text: err.response?.data?.message || 'Intenta de nuevo.'
+            });
+        } finally {
+            setRecetaSending(false);
+        }
+    };
+
     const handleSendMessage = (e) => {
         e.preventDefault();
         if (!currentMsg.trim() || !myProfile) return;
@@ -392,6 +440,10 @@ const SalaVideollamada = () => {
         appointment?.esperaExtendidaHasta &&
         ['Agendada', 'Programada'].includes(appointment.estado) &&
         extendedWaitRemainingMs != null;
+
+    if (!sessionReady) {
+        return <LoadingView message="Preparando videollamada…" />;
+    }
 
     return (
         <div className="container-lg">
@@ -423,6 +475,14 @@ const SalaVideollamada = () => {
                         <span className="video-label">Paciente / Especialista</span>
                     </div>
                 </div>
+
+                {puedeEmitirReceta && (
+                    <div className="videollamada-actions-medico">
+                        <button type="button" className="btn btn-sm-auto" onClick={() => setRecetaModalOpen(true)}>
+                            Emitir receta / tratamiento
+                        </button>
+                    </div>
+                )}
 
                 <button
                     className="btn btn-danger"
@@ -469,6 +529,55 @@ const SalaVideollamada = () => {
                     </form>
                 </div>
             </div>
+
+            {recetaModalOpen && (
+                <div
+                    className="videollamada-modal-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="receta-modal-title"
+                    onClick={(ev) => {
+                        if (ev.target === ev.currentTarget) setRecetaModalOpen(false);
+                    }}
+                >
+                    <div className="videollamada-modal glass-panel" onClick={(e) => e.stopPropagation()}>
+                        <h3 id="receta-modal-title" className="videollamada-modal-title">
+                            Receta o indicaciones de tratamiento
+                        </h3>
+                        <p className="videollamada-modal-hint">
+                            El texto se enviará al paciente y quedará en su listado «Mis recetas».
+                        </p>
+                        <form onSubmit={handleEnviarReceta}>
+                            <label className="videollamada-modal-label" htmlFor="receta-contenido">
+                                Contenido
+                            </label>
+                            <textarea
+                                id="receta-contenido"
+                                className="videollamada-modal-textarea"
+                                rows={8}
+                                value={recetaTexto}
+                                onChange={(e) => setRecetaTexto(e.target.value)}
+                                placeholder="Medicación, dosis, duración, recomendaciones…"
+                                required
+                                minLength={8}
+                            />
+                            <div className="videollamada-modal-buttons">
+                                <button
+                                    type="button"
+                                    className="btn btn-secondary btn-sm-auto"
+                                    onClick={() => setRecetaModalOpen(false)}
+                                    disabled={recetaSending}
+                                >
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-sm-auto" disabled={recetaSending}>
+                                    {recetaSending ? 'Enviando…' : 'Enviar al paciente'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

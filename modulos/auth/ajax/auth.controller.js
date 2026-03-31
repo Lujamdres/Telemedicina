@@ -1,3 +1,5 @@
+const path = require('path');
+const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const User = require('../data/User.model');
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../../../core/config');
@@ -83,6 +85,71 @@ const getProfile = async (req, res) => {
     }
 };
 
+const updateProfile = async (req, res) => {
+    try {
+        const { nombre, apellido, telefono, especialidad, passwordActual, passwordNueva } = req.body;
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+        if (nombre != null && String(nombre).trim()) user.nombre = String(nombre).trim();
+        if (apellido != null && String(apellido).trim()) user.apellido = String(apellido).trim();
+        if (telefono !== undefined) user.telefono = telefono ? String(telefono).trim() : undefined;
+
+        if (user.role === 'Medico' && especialidad !== undefined) {
+            user.especialidad = especialidad ? String(especialidad).trim() : undefined;
+        }
+
+        if (passwordNueva != null && String(passwordNueva).length > 0) {
+            if (String(passwordNueva).length < 6) {
+                return res.status(400).json({ success: false, message: 'La nueva contraseña debe tener al menos 6 caracteres' });
+            }
+            if (!passwordActual) {
+                return res.status(400).json({ success: false, message: 'Indica tu contraseña actual para cambiarla' });
+            }
+            const ok = await user.matchPassword(passwordActual);
+            if (!ok) {
+                return res.status(400).json({ success: false, message: 'Contraseña actual incorrecta' });
+            }
+            user.password = passwordNueva;
+        }
+
+        await user.save();
+        const fresh = await User.findById(user._id).select('-password');
+        res.json({ success: true, data: fresh });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+const uploadProfilePhoto = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No se envió ninguna imagen' });
+        }
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
+
+        const publicPath = `/uploads/avatars/${req.file.filename}`;
+        const oldPath = user.fotoPerfil;
+        user.fotoPerfil = publicPath;
+        await user.save();
+
+        if (oldPath && oldPath.startsWith('/uploads/avatars/')) {
+            const oldFile = path.join(__dirname, '../../../uploads/avatars', path.basename(oldPath));
+            try {
+                if (fs.existsSync(oldFile)) fs.unlinkSync(oldFile);
+            } catch {
+                /* ignore */
+            }
+        }
+
+        const fresh = await User.findById(user._id).select('-password');
+        res.json({ success: true, data: fresh });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 // Obtener lista de médicos
 const getMedicos = async (req, res) => {
     try {
@@ -97,5 +164,7 @@ module.exports = {
     register,
     login,
     getProfile,
+    updateProfile,
+    uploadProfilePhoto,
     getMedicos
 };

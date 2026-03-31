@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getToken } from '../../../assets/js/authSession';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
-import '../assets/css/historial.css'; // Estilos modulares
+import '../assets/css/historial.css';
+import MedicoSidebar from '../../citas/html/MedicoSidebar.jsx';
+import '../../citas/assets/css/medico-layout.css';
 
 const HistorialClinico = () => {
     const { id: pacienteId } = useParams();
@@ -93,13 +96,19 @@ const HistorialClinico = () => {
         }
     };
 
-    if (loading) return <div className="empty-state">Cargando Historial Médico...</div>;
+    if (loading) return <LoadingView message="Cargando historial médico…" />;
 
-    return (
+    const mainContent = (
         <div className="historial-container">
             <div className="header-flex">
                 <h1 className="title-primary">Expediente Clínico del Paciente</h1>
-                <button className="btn btn-secondary btn-sm-auto" onClick={() => navigate('/dashboard')}>Volver al Panel</button>
+                <button
+                    type="button"
+                    className="btn btn-secondary btn-sm-auto"
+                    onClick={() => navigate(userRole === 'Medico' ? '/medico/pacientes-historial' : '/dashboard')}
+                >
+                    {userRole === 'Medico' ? 'Volver al listado' : 'Volver al Panel'}
+                </button>
             </div>
 
             {historiales.length === 0 ? (
@@ -184,6 +193,19 @@ const HistorialClinico = () => {
             )}
         </div>
     );
+
+    if (userRole === 'Medico') {
+        return (
+            <div className="medico-app-layout">
+                <MedicoSidebar />
+                <div className="medico-app-main">
+                    <div className="container">{mainContent}</div>
+                </div>
+            </div>
+        );
+    }
+
+    return mainContent;
 };
 
 export default HistorialClinico;

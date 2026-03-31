@@ -43,9 +43,6 @@ coverage/
 ehthumbs.db
 Thumbs.db
 
-# OpenAPI: overrides locales (copia de docs/openapi.json con URLs o ejemplos propios)
-docs/openapi.local.json
-
 # Uploads
 uploads/
 

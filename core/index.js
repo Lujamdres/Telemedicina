@@ -6,11 +6,11 @@ const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const connectDB = require('./db');
 const { PORT, JWT_SECRET } = require('./config');
-const { mountSwagger } = require('./swagger');
 
 const authRoutes = require('../modulos/auth/ajax/auth.routes');
 const appointmentRoutes = require('../modulos/citas/ajax/appointment.routes');
 const historialRoutes = require('../modulos/historial/ajax/historial.routes');
+const recetaRoutes = require('../modulos/recetas/ajax/receta.routes');
 const Appointment = require('../modulos/citas/data/Appointment.model');
 
 const app = express();
@@ -39,12 +39,11 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Telemedicina API is running' });
 });
 
-mountSwagger(app);
-
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/historial', historialRoutes);
+app.use('/api/recetas', recetaRoutes);
 
 // Configuración de WebRTC / Señalización con Socket.io
 io.on('connection', (socket) => {
@@ -90,6 +89,7 @@ io.on('connection', (socket) => {
             const now = new Date();
             if (isPaciente && !appointment.pacienteJoinedAt) appointment.pacienteJoinedAt = now;
             if (isMedico && !appointment.medicoJoinedAt) appointment.medicoJoinedAt = now;
+            appointment.syncVideollamadaInicioIfBothJoined();
             await appointment.save();
 
             const updated = await Appointment.findById(appointment._id);
@@ -103,6 +103,7 @@ io.on('connection', (socket) => {
                 const extMs = new Date(updated.esperaExtendidaHasta).getTime();
                 if (!Number.isNaN(extMs) && Date.now() <= extMs) {
                     updated.estado = 'Completada';
+                    updated.markVideollamadaFinIfCompleted();
                     await updated.save();
                     io.to(roomId).emit('appointment-completed', { estado: 'Completada' });
                 }
@@ -149,5 +150,4 @@ io.on('connection', (socket) => {
 // Arranque
 server.listen(PORT, () => {
     console.log(`Servidor activo en puerto ${PORT}`);
-    console.log(`Documentación API (Swagger UI): http://localhost:${PORT}/api-docs`);
 });

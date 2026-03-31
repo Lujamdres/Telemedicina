@@ -2,11 +2,16 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { getToken, removeToken } from '../../../assets/js/authSession';
-import { io } from 'socket.io-client';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
+import { createAppSocket } from '../../../assets/js/socketClient';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
 import '../assets/css/citas.css';
 import MedicoDashboardCharts from './MedicoDashboardCharts.jsx';
+import MedicoSidebar from './MedicoSidebar.jsx';
+import PacienteSidebar from './PacienteSidebar.jsx';
+import '../assets/css/medico-layout.css';
+import MedConnectLogo from '../../../assets/js/MedConnectLogo.jsx';
 
 function badgeTextoCita(c) {
     if (c.estado === 'Cancelada' && c.canceladaPorRole) return `Cancelada por ${c.canceladaPorRole}`;
@@ -79,9 +84,7 @@ const Dashboard = () => {
         if (!token || loading || !user) return undefined;
         if (user.role !== 'Medico' && user.role !== 'Paciente') return undefined;
 
-        const socket = io('/', {
-            transports: ['websocket', 'polling'],
-        });
+        const socket = createAppSocket();
 
         const joinDashboard = () => {
             socket.emit('dashboard-join', { token });
@@ -107,11 +110,6 @@ const Dashboard = () => {
 
     const handleCrearCitaClick = () => {
         navigate('/nueva-cita');
-    };
-
-    const handleLogout = () => {
-        removeToken();
-        navigate('/login');
     };
 
     const apiConfig = { headers: { Authorization: `Bearer ${token}` } };
@@ -181,33 +179,43 @@ const Dashboard = () => {
         return { pendientes, agendadas, finales, completadas };
     }, [citas, user?.role]);
 
-    if (loading) return <div className="empty-state">Cargando sistema de Telemedicina...</div>;
+    if (loading) return <LoadingView message="Cargando sistema de Telemedicina…" />;
 
-    return (
+    const mainInner = (
         <div className="container">
             <header className="header-flex">
-                <div>
-                    <h1 className="title-primary">Panel de {user?.role}</h1>
-                    <p>Bienvenido, <strong>{user?.nombre} {user?.apellido}</strong> {user?.especialidad && `(${user.especialidad})`}</p>
+                <div className="mcl-header-row">
+                    <MedConnectLogo variant="header" />
+                    <div className="mcl-page-titles">
+                        <h1 className="title-primary">Panel de {user?.role}</h1>
+                        <p>
+                            Bienvenido, <strong>{user?.nombre} {user?.apellido}</strong>{' '}
+                            {user?.especialidad && `(${user.especialidad})`}
+                        </p>
+                    </div>
                 </div>
-                <button className="btn btn-danger btn-sm-auto" onClick={handleLogout}>Cerrar Sesión</button>
+                {user?.role !== 'Medico' && user?.role !== 'Paciente' && (
+                    <button
+                        className="btn btn-danger btn-sm-auto"
+                        type="button"
+                        onClick={() => {
+                            removeToken();
+                            navigate('/login');
+                        }}
+                    >
+                        Cerrar sesión
+                    </button>
+                )}
             </header>
 
             <section>
                 <div className="flex-between">
                     <h2>{user?.role === 'Medico' ? 'Tablero de citas' : 'Mis Citas'}</h2>
-                    {(user?.role === 'Medico' || user?.role === 'Paciente') && (
+                    {user?.role === 'Paciente' && (
                         <div className="flex-gap-1" style={{ justifyContent: 'flex-end' }}>
-                            {user?.role === 'Medico' && (
-                                <button type="button" className="btn btn-secondary btn-sm-auto" onClick={() => navigate('/calendario-medico')}>
-                                    Calendario
-                                </button>
-                            )}
-                            {user?.role === 'Paciente' && (
-                                <button type="button" className="btn btn-sm-auto" onClick={handleCrearCitaClick}>
-                                    + Nueva Cita
-                                </button>
-                            )}
+                            <button type="button" className="btn btn-sm-auto" onClick={handleCrearCitaClick}>
+                                + Nueva Cita
+                            </button>
                         </div>
                     )}
                 </div>
@@ -420,6 +428,26 @@ const Dashboard = () => {
             </section>
         </div>
     );
+
+    if (user?.role === 'Medico') {
+        return (
+            <div className="medico-app-layout">
+                <MedicoSidebar />
+                <div className="medico-app-main">{mainInner}</div>
+            </div>
+        );
+    }
+
+    if (user?.role === 'Paciente') {
+        return (
+            <div className="medico-app-layout">
+                <PacienteSidebar />
+                <div className="medico-app-main">{mainInner}</div>
+            </div>
+        );
+    }
+
+    return mainInner;
 };
 
 export default Dashboard;

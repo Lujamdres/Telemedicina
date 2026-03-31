@@ -1,0 +1,302 @@
+/* MedConnect — logotipo solo CSS (emblem + wordmark) */
+
+.medconnect-logo {
+  --mcl-blue: #0077b6;
+  --mcl-green: #1a7f37;
+  --mcl-mint: #34d399;
+  --mcl-ring: linear-gradient(145deg, #4ade80 0%, #0077b6 52%, #0c4a6e 100%);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.medconnect-logo--auth {
+  flex-direction: column;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  width: 100%;
+}
+
+.medconnect-logo--auth .mcl-wordmark {
+  font-size: clamp(1.35rem, 4vw, 1.75rem);
+}
+
+/* Panel lateral login / registro: emblema y nombre grandes */
+.medconnect-logo--hero {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  width: 100%;
+}
+
+.medconnect-logo--hero .mcl-emblem {
+  width: clamp(6.75rem, 14vw, 9rem);
+  height: clamp(6.75rem, 14vw, 9rem);
+  filter: drop-shadow(0 6px 20px rgba(0, 119, 182, 0.22));
+}
+
+.medconnect-logo--hero .mcl-wordmark {
+  font-size: clamp(1.85rem, 4.2vw, 2.65rem);
+  letter-spacing: -0.045em;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.08;
+}
+
+.medconnect-logo--hero .mcl-txt-med,
+.medconnect-logo--hero .mcl-txt-connect {
+  display: inline;
+}
+
+.medconnect-logo--header .mcl-emblem {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+
+.medconnect-logo--header .mcl-wordmark {
+  font-size: 1.15rem;
+}
+
+.medconnect-logo--sidebar {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.35rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.medconnect-logo--sidebar .mcl-emblem {
+  width: 3rem;
+  height: 3rem;
+}
+
+.medconnect-logo--sidebar .mcl-wordmark {
+  font-size: 0.95rem;
+  letter-spacing: -0.02em;
+}
+
+/* —— Emblema circular —— */
+.mcl-emblem {
+  position: relative;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+}
+
+.mcl-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--mcl-ring);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.08),
+    0 4px 14px rgba(0, 119, 182, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.mcl-scene {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: linear-gradient(165deg, #ecfdf5 0%, #e0f2fe 50%, #cffafe 100%);
+}
+
+html[data-theme='dark'] .mcl-scene {
+  background: linear-gradient(165deg, rgba(6, 78, 59, 0.45) 0%, rgba(12, 74, 110, 0.55) 100%);
+}
+
+/* Rayos de luz */
+.mcl-rays {
+  position: absolute;
+  left: 50%;
+  top: 5%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 20%;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.mcl-rays span {
+  display: block;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(167, 243, 208, 0.98) 0%, rgba(52, 211, 153, 0.55) 55%, transparent 100%);
+  border-radius: 2px;
+  transform-origin: bottom center;
+  opacity: 0.95;
+}
+
+.mcl-rays span:nth-child(1) {
+  transform: rotate(-20deg);
+}
+.mcl-rays span:nth-child(2) {
+  opacity: 1;
+}
+.mcl-rays span:nth-child(3) {
+  transform: rotate(20deg);
+}
+
+/* Cruz médica */
+.mcl-cross {
+  position: absolute;
+  left: 50%;
+  top: 16%;
+  transform: translate(-50%, -50%);
+  width: 18%;
+  height: 18%;
+  z-index: 3;
+}
+
+.mcl-cross::before,
+.mcl-cross::after {
+  content: '';
+  position: absolute;
+  background: linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%);
+  border-radius: 2px;
+  box-shadow:
+    0 0 0 0.5px rgba(16, 185, 129, 0.35),
+    0 2px 4px rgba(0, 119, 182, 0.12);
+}
+
+.mcl-cross::before {
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 28%;
+  height: 100%;
+}
+
+.mcl-cross::after {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 28%;
+}
+
+/* Alas */
+.mcl-wings {
+  position: absolute;
+  left: 50%;
+  top: 34%;
+  transform: translate(-50%, -50%);
+  width: 62%;
+  height: 22%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.mcl-wings::before,
+.mcl-wings::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 48%;
+  height: 100%;
+  background: linear-gradient(155deg, rgba(110, 231, 183, 0.92) 0%, rgba(52, 211, 153, 0.65) 40%, rgba(0, 119, 182, 0.28) 100%);
+  border-radius: 60% 20% 80% 10%;
+  opacity: 0.94;
+}
+
+.mcl-wings::before {
+  left: 0;
+  transform: scaleX(-1);
+}
+
+.mcl-wings::after {
+  right: 0;
+}
+
+/* Torre (faro) */
+.mcl-tower {
+  position: absolute;
+  left: 50%;
+  bottom: 26%;
+  transform: translateX(-50%);
+  width: 24%;
+  height: 42%;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.22) 48%, transparent 52%),
+    linear-gradient(180deg, #4ade80 0%, #22c55e 18%, #0077b6 72%, #0369a1 100%);
+  clip-path: polygon(18% 0, 82% 0, 100% 100%, 0 100%);
+  border-radius: 3px 3px 0 0;
+  z-index: 1;
+  box-shadow:
+    inset -3px 0 6px rgba(0, 0, 0, 0.1),
+    inset 2px 0 4px rgba(255, 255, 255, 0.15);
+}
+
+/* Ola */
+.mcl-wave {
+  position: absolute;
+  bottom: -5%;
+  left: -8%;
+  width: 116%;
+  height: 34%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(56, 189, 248, 0.12) 28%,
+    rgba(0, 119, 182, 0.42) 55%,
+    rgba(3, 105, 161, 0.58) 100%
+  );
+  border-radius: 50% 50% 0 0 / 100% 72% 0 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Wordmark */
+.mcl-wordmark {
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+.mcl-txt-med {
+  color: var(--mcl-blue);
+}
+
+.mcl-txt-connect {
+  color: var(--mcl-green);
+}
+
+html[data-theme='dark'] .mcl-txt-med {
+  color: #38bdf8;
+}
+
+html[data-theme='dark'] .mcl-txt-connect {
+  color: #4ade80;
+}
+
+/* Cabeceras de página junto al logo */
+.mcl-header-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.mcl-header-row .mcl-page-titles {
+  min-width: 0;
+}
+
+.mcl-header-row .mcl-page-titles h1 {
+  margin-bottom: 0.25rem;
+}
+
+.mcl-header-row .mcl-page-titles p {
+  margin: 0;
+}

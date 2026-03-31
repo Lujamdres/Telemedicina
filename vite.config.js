@@ -24,10 +24,6 @@ export default defineConfig({
             '/socket.io': {
                 target: 'http://localhost:5000',
                 ws: true
-            },
-            '/api-docs': {
-                target: 'http://localhost:5000',
-                changeOrigin: true
             }
         }
     }

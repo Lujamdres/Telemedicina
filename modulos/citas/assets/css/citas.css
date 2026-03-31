@@ -43,7 +43,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1rem;
-  align-items: stretch;
+  align-items: start;
   margin-top: 0.5rem;
 }
 
@@ -84,15 +84,19 @@
   line-height: 1.35;
 }
 
+/* ~3 tarjetas visibles; el resto con scroll vertical */
 .kanban-column-body {
-  flex: 1;
+  --kanban-card-slot: 13rem;
+  flex: 0 1 auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
   overflow-y: auto;
-  max-height: min(70vh, 720px);
-  padding-right: 0.25rem;
+  overflow-x: hidden;
+  max-height: calc(3 * var(--kanban-card-slot) + 2 * 0.75rem);
+  padding-right: 0.35rem;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kanban-card.cita-card-item {
@@ -290,6 +294,7 @@
   }
 
   .kanban-column-body {
-    max-height: none;
+    --kanban-card-slot: 12.5rem;
+    max-height: min(calc(3 * var(--kanban-card-slot) + 2 * 0.75rem), 70vh);
   }
 }

@@ -3,7 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
 import { getToken } from '../../../assets/js/authSession';
+import LoadingView from '../../../assets/js/LoadingView.jsx';
 import '../../../assets/css/global.css';
+
+function toDatetimeLocalMin(d = new Date()) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const h = pad(d.getHours());
+    const min = pad(d.getMinutes());
+    return `${y}-${m}-${day}T${h}:${min}`;
+}
 
 const NuevaCita = () => {
     const navigate = useNavigate();
@@ -12,6 +23,12 @@ const NuevaCita = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [minFechaHora, setMinFechaHora] = useState(() => toDatetimeLocalMin());
+
+    useEffect(() => {
+        const id = setInterval(() => setMinFechaHora(toDatetimeLocalMin()), 30000);
+        return () => clearInterval(id);
+    }, []);
 
     useEffect(() => {
         const token = getToken();
@@ -55,6 +72,18 @@ const NuevaCita = () => {
             });
             return;
         }
+
+        const cuando = new Date(formData.fechaHora);
+        if (!formData.fechaHora || Number.isNaN(cuando.getTime()) || cuando.getTime() <= Date.now()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fecha no válida',
+                text: 'Debes elegir una fecha y hora posteriores al momento actual.',
+                confirmButtonColor: '#4f46e5'
+            });
+            return;
+        }
+
         setLoading(true);
         setError('');
         try {
@@ -94,8 +123,8 @@ const NuevaCita = () => {
     if (userRole === null) {
         return (
             <div className="container-sm">
-                <div className="glass-panel">
-                    <p className="text-muted-mb">Cargando…</p>
+                <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+                    <LoadingView variant="compact" message="Preparando formulario…" />
                 </div>
             </div>
         );
@@ -126,6 +155,7 @@ const NuevaCita = () => {
 
     return (
         <div className="container-sm">
+            {loading && <LoadingView variant="overlay" message="Agendando cita…" />}
             <div className="glass-panel">
                 <h2>Agendar Nueva Cita</h2>
                 <p className="text-muted-mb">Selecciona tu médico de preferencia, el horario y cuéntanos el motivo.</p>
@@ -154,6 +184,7 @@ const NuevaCita = () => {
                         <input
                             type="datetime-local"
                             required
+                            min={minFechaHora}
                             value={formData.fechaHora}
                             onChange={(e) => setFormData({ ...formData, fechaHora: e.target.value })}
                         />

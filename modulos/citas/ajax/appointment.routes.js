@@ -3,6 +3,7 @@ const router = express.Router();
 const {
     createAppointment,
     getMyAppointments,
+    getHistorialCompletadas,
     acceptAppointment,
     completeAppointment,
     cancelAppointment,
@@ -19,6 +20,8 @@ router.post('/', requireRole('Paciente', 'Administrador'), createAppointment);
 
 // Ver mis citas (Paciente o Médico)
 router.get('/', getMyAppointments);
+
+router.get('/historial-completadas', getHistorialCompletadas);
 
 router.get('/room/:roomId', getAppointmentByRoom);
 router.put('/:id/accept', requireRole('Medico', 'Administrador'), acceptAppointment);
