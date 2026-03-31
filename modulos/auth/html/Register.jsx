@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import LoadingView from '../../../assets/js/LoadingView.jsx';
 import MedConnectLogo from '../../../assets/js/MedConnectLogo.jsx';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../../assets/js/apiConfig.js';
 import Swal from 'sweetalert2';
 import { setToken } from '../../../assets/js/authSession';
 
@@ -58,7 +58,7 @@ const Register = () => {
             }
 
             setSubmitting(true);
-            const res = await axios.post('/api/auth/register', { nombre, apellido, email, password, role, especialidad });
+            const res = await api.post('/auth/register', { nombre, apellido, email, password, role, especialidad });
             setToken(res.data.token);
 
             Swal.fire({
