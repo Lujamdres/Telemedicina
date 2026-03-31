@@ -1,22 +1,295 @@
 .cita-card-item {
   padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card-bg);
+  color: var(--text-dark);
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border: 1px solid var(--card-border);
   border-left: 4px solid var(--primary);
+  box-shadow: var(--card-base-shadow);
   margin-bottom: 1rem;
+}
+
+.cita-card-item h3 {
+  color: var(--text-dark);
+  font-size: 1.05rem;
+  margin-bottom: 0;
+}
+
+.cita-card-item .badge {
+  flex-shrink: 0;
+}
+
+.cita-card-item strong {
+  color: var(--text-dark);
 }
 
 .citas-empty-state {
   padding: 2rem;
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  color: var(--text-dark);
   border-radius: 8px;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: var(--card-base-shadow);
 }
 
 .citas-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+}
+
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+  margin-top: 0.5rem;
+}
+
+.kanban-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 12rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--card-base-shadow);
+}
+
+.kanban-column--pendiente {
+  border-top: 3px solid #d97706;
+}
+
+.kanban-column--agendada {
+  border-top: 3px solid var(--primary);
+}
+
+.kanban-column--final {
+  border-top: 3px solid var(--danger);
+}
+
+.kanban-column-title {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.kanban-column-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.kanban-column-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+  overflow-y: auto;
+  max-height: min(70vh, 720px);
+  padding-right: 0.25rem;
+}
+
+.kanban-card.cita-card-item {
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.kanban-card.cita-card-item .flex-between {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem 0.65rem;
+  margin-bottom: 0.65rem;
+}
+
+.kanban-card.cita-card-item .flex-between h3 {
+  flex: 1 1 140px;
+  min-width: 0;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.kanban-card.cita-card-item .flex-between .badge {
+  flex: 0 1 auto;
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.kanban-card.cita-card-item .text-subtle,
+.kanban-card.cita-card-item .text-muted-mb,
+.kanban-card.cita-card-item .kanban-meta,
+.kanban-card.cita-card-item .kanban-motivo {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+.cita-card-item.kanban-card .kanban-card-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.45rem;
+  width: 100%;
+}
+
+.cita-card-item.kanban-card .kanban-card-actions .btn {
+  width: 100%;
+  margin: 0;
+}
+
+.kanban-meta {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.kanban-motivo {
+  font-size: 0.88rem;
+}
+
+.kanban-empty {
+  margin: 0;
+  padding: 1rem 0.5rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.kanban-completadas {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--card-border);
+}
+
+.kanban-completadas-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.medico-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.medico-chart-card {
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--card-base-shadow);
+}
+
+.medico-chart-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.medico-chart-hint {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.medico-chart-inner {
+  width: 100%;
+}
+
+.medico-chart-inner--donut {
+  min-height: 280px;
+}
+
+.medico-chart-inner--bar {
+  min-height: 300px;
+}
+
+.medico-chart-empty {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.medico-chart-date-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  align-items: flex-end;
+}
+
+.medico-chart-date-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.medico-chart-date-input {
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text-dark);
+  font-size: 0.9rem;
+}
+
+.medico-chart-tooltip {
+  padding: 0.5rem 0.75rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  box-shadow: var(--card-base-shadow);
+  font-size: 0.85rem;
+  color: var(--text-dark);
+}
+
+.medico-chart-tooltip strong {
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+@media (max-width: 900px) {
+  .medico-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .kanban-board {
+    grid-template-columns: 1fr;
+  }
+
+  .kanban-column-body {
+    max-height: none;
+  }
 }

@@ -4,7 +4,9 @@ const { JWT_SECRET, JWT_EXPIRES_IN } = require('../../../core/config');
 
 // Helper para generar el token
 const generateToken = (user) => {
-    return jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
+    const id = user._id != null ? user._id.toString() : String(user.id);
+    const role = user.role || 'Paciente';
+    return jwt.sign({ id, role }, JWT_SECRET, {
         expiresIn: JWT_EXPIRES_IN,
     });
 };

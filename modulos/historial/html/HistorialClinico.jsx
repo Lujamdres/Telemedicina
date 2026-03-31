@@ -171,10 +171,10 @@ const HistorialClinico = () => {
                         <textarea rows="2" value={formData.notasEvolutivas} onChange={(e) => setFormData({ ...formData, notasEvolutivas: e.target.value })}></textarea>
                     </div>
 
-                    <div className="form-group" style={{ background: '#fff', padding: '1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Adjuntar Receta o Laboratorio (Opcional)</label>
-                        <input type="file" accept=".pdf, image/*" onChange={(e) => setArchivo(e.target.files[0])} style={{ width: '100%', padding: '0.5rem' }} />
-                        {archivo && <p className="text-subtle" style={{ fontSize: '0.85rem' }}>Archivo seleccionado: {archivo.name}</p>}
+                    <div className="form-group historial-file-group">
+                        <label className="historial-file-label">Adjuntar Receta o Laboratorio (Opcional)</label>
+                        <input className="historial-file-input" type="file" accept=".pdf, image/*" onChange={(e) => setArchivo(e.target.files[0])} />
+                        {archivo && <p className="text-subtle historial-file-selected">Archivo seleccionado: {archivo.name}</p>}
                     </div>
 
                     <button type="submit" className="btn" style={{ marginTop: '1.5rem' }}>Guardar Ficha Clínica y Archivos</button>

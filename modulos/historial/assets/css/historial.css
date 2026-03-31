@@ -64,3 +64,42 @@
   font-size: 0.8rem;
   font-weight: 600;
 }
+
+.historial-file-group {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.historial-file-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.historial-file-input {
+  display: block;
+  width: 100%;
+  padding: 0.5rem;
+  color: var(--text-dark);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+}
+
+.historial-file-input::file-selector-button {
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  margin-right: 0.75rem;
+  cursor: pointer;
+}
+
+.historial-file-selected {
+  margin-top: 0.65rem;
+  font-size: 0.85rem;
+}

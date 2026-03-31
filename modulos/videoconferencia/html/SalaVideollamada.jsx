@@ -15,11 +15,14 @@ const SalaVideollamada = () => {
     const socketRef = useRef(null);
     const iceCandidatesQueue = useRef([]);
     const messagesEndRef = useRef(null);
+    const appointmentPollRef = useRef(null);
 
     // Chat States
     const [messages, setMessages] = useState([]);
     const [currentMsg, setCurrentMsg] = useState('');
     const [myProfile, setMyProfile] = useState(null);
+    const [appointment, setAppointment] = useState(null);
+    const [absenceText, setAbsenceText] = useState('');
 
     // Solo usamos STUN servers hiper-confiables.
     const rtcConfig = {
@@ -60,7 +63,16 @@ const SalaVideollamada = () => {
                 }
                 setStreamStatus('Esperando al Especialista/Paciente...');
 
-                currentSocket.emit('join-room', roomId);
+                currentSocket.emit('join-room', { roomId, token });
+
+                const loadAppointment = async () => {
+                    const res = await axios.get(`/api/appointments/room/${roomId}`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setAppointment(res.data.data);
+                };
+                await loadAppointment();
+                appointmentPollRef.current = setInterval(loadAppointment, 30000);
 
                 currentSocket.on('user-joined', async (userId) => {
                     setStreamStatus('Usuario conectado, iniciando conexión...');
@@ -136,8 +148,30 @@ const SalaVideollamada = () => {
             if (localVideoRef.current && localVideoRef.current.srcObject) {
                 localVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
             }
+            if (appointmentPollRef.current) {
+                clearInterval(appointmentPollRef.current);
+                appointmentPollRef.current = null;
+            }
         };
     }, [roomId, navigate]);
+
+    useEffect(() => {
+        if (!appointment || !myProfile || !['Agendada', 'Programada'].includes(appointment.estado)) {
+            setAbsenceText('');
+            return;
+        }
+        const now = Date.now();
+        const pJoin = appointment.pacienteJoinedAt ? new Date(appointment.pacienteJoinedAt).getTime() : null;
+        const mJoin = appointment.medicoJoinedAt ? new Date(appointment.medicoJoinedAt).getTime() : null;
+        let msg = '';
+        if (myProfile.role === 'Medico' && mJoin && !pJoin && now > mJoin + 5 * 60 * 1000) {
+            msg = 'Cita perdida por ausencia de Paciente';
+        }
+        if (myProfile.role === 'Paciente' && pJoin && !mJoin && now > pJoin + 5 * 60 * 1000) {
+            msg = 'Cita perdida por ausencia de Medico';
+        }
+        setAbsenceText(msg);
+    }, [appointment, myProfile]);
 
     const processIceQueue = () => {
         if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
@@ -199,6 +233,11 @@ const SalaVideollamada = () => {
                 <div className="badge badge-Programada mb-2" style={{ display: 'inline-block' }}>
                     {streamStatus}
                 </div>
+                {absenceText && (
+                    <button type="button" className="btn btn-danger btn-sm-auto" style={{ margin: '0 auto 1rem' }}>
+                        {absenceText}
+                    </button>
+                )}
 
                 <div className="video-grid">
                     <div className="video-wrapper local">

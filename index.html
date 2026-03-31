@@ -5,6 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Telemedicina Colaborativa</title>
+    <script>
+        (function () {
+            try {
+                var k = 'lui-theme';
+                var t = localStorage.getItem(k);
+                if (t !== 'light' && t !== 'dark' && t !== 'system') t = 'system';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'system');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="/assets/css/global.css">
 </head>
 

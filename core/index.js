@@ -2,22 +2,26 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const path = require('path');
+const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const connectDB = require('./db');
-const { PORT } = require('./config');
+const { PORT, JWT_SECRET } = require('./config');
+const { mountSwagger } = require('./swagger');
 
 const authRoutes = require('../modulos/auth/ajax/auth.routes');
 const appointmentRoutes = require('../modulos/citas/ajax/appointment.routes');
 const historialRoutes = require('../modulos/historial/ajax/historial.routes');
+const Appointment = require('../modulos/citas/data/Appointment.model');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: '*', // En producción limitar esto
+        origin: '*',
         methods: ['GET', 'POST']
     }
 });
+app.set('io', io);
 
 // Middlewares Globales
 app.use(cors());
@@ -35,6 +39,8 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Telemedicina API is running' });
 });
 
+mountSwagger(app);
+
 // Rutas
 app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
@@ -44,10 +50,52 @@ app.use('/api/historial', historialRoutes);
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado:', socket.id);
 
-    socket.on('join-room', (roomId) => {
+    socket.on('dashboard-join', (payload) => {
+        try {
+            const token = typeof payload === 'string' ? payload : payload?.token;
+            if (!token) return;
+            const decoded = jwt.verify(token, JWT_SECRET);
+            const uid = decoded.id != null ? String(decoded.id) : null;
+            if (!uid) return;
+            socket.join(`user:${uid}`);
+        } catch {
+        }
+    });
+
+    socket.on('join-room', async (payload) => {
+        let roomId = payload;
+        let token = null;
+        if (typeof payload === 'object' && payload !== null) {
+            roomId = payload.roomId;
+            token = payload.token || null;
+        }
+        if (!roomId) return;
+
         socket.join(roomId);
-        // Notificar a los demás en la sala
         socket.to(roomId).emit('user-joined', socket.id);
+
+        try {
+            if (!token) return;
+            const decoded = jwt.verify(token, JWT_SECRET);
+            const userId = decoded.id != null ? String(decoded.id) : null;
+            const role = decoded.role ? String(decoded.role) : '';
+            if (!userId || !role) return;
+
+            const appointment = await Appointment.findOne({ enlaceVideollamada: roomId });
+            if (!appointment) return;
+            const isPaciente = String(appointment.paciente) === userId;
+            const isMedico = String(appointment.medico) === userId;
+            if (!isPaciente && !isMedico) return;
+
+            const now = new Date();
+            if (isPaciente && !appointment.pacienteJoinedAt) appointment.pacienteJoinedAt = now;
+            if (isMedico && !appointment.medicoJoinedAt) appointment.medicoJoinedAt = now;
+            await appointment.save();
+
+            io.to(`user:${String(appointment.paciente)}`).emit('citas-refresh');
+            io.to(`user:${String(appointment.medico)}`).emit('citas-refresh');
+        } catch {
+        }
     });
 
     socket.on('offer', (offer, roomId) => {
@@ -85,4 +133,5 @@ io.on('connection', (socket) => {
 // Arranque
 server.listen(PORT, () => {
     console.log(`Servidor activo en puerto ${PORT}`);
+    console.log(`Documentación API (Swagger UI): http://localhost:${PORT}/api-docs`);
 });

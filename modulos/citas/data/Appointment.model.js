@@ -17,8 +17,25 @@ const appointmentSchema = new mongoose.Schema({
     },
     estado: {
         type: String,
-        enum: ['Programada', 'Completada', 'Cancelada'],
-        default: 'Programada'
+        enum: ['Pendiente', 'Agendada', 'Programada', 'Completada', 'Cancelada', 'Perdida'],
+        default: 'Pendiente'
+    },
+    canceladaPorRole: {
+        type: String,
+        enum: ['Paciente', 'Medico', 'Administrador']
+    },
+    motivoCancelacion: {
+        type: String
+    },
+    perdidaPorAusenciaDe: {
+        type: String,
+        enum: ['Paciente', 'Medico', 'Ambos']
+    },
+    pacienteJoinedAt: {
+        type: Date
+    },
+    medicoJoinedAt: {
+        type: Date
     },
     motivoConsulta: {
         type: String,

@@ -42,15 +42,15 @@
 
 /* --- CHAT P2P EN VIVO --- */
 .chat-container {
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--chat-container-bg);
   border-radius: 12px;
   padding: 1rem;
   margin-top: 1rem;
   display: flex;
   flex-direction: column;
   height: 250px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: var(--chat-container-shadow);
+  border: 1px solid var(--chat-container-border);
 }
 
 .chat-messages {
@@ -79,8 +79,8 @@
 }
 
 .chat-msg.remote {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--chat-remote-bg);
+  color: var(--chat-remote-color);
   align-self: flex-start;
   border-bottom-left-radius: 2px;
 }
@@ -101,10 +101,12 @@
 .chat-input {
   flex: 1;
   padding: 0.7rem;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--chat-input-border);
   border-radius: 8px;
   outline: none;
   font-family: inherit;
+  background: var(--chat-input-bg);
+  color: var(--text-dark);
   transition: border-color 0.2s;
 }
 
@@ -124,5 +126,5 @@
 }
 
 .chat-btn:hover {
-  background: #3730a3;
+  background: var(--primary-hover);
 }
