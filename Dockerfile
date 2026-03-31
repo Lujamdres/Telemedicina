@@ -15,6 +15,9 @@ COPY . .
 # Construir frontend
 RUN npx vite build
 
+# Instalar serve para servir el frontend
+RUN npm install -g serve
+
 # Exponer puertos
 EXPOSE 5000
 
@@ -22,5 +25,5 @@ EXPOSE 5000
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Iniciar aplicación
-CMD ["npm", "start"]
+# Iniciar aplicación (backend + frontend)
+CMD ["sh", "-c", "npm start & serve -s dist -l 5000"]
