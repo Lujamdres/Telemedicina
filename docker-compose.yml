@@ -7,7 +7,8 @@ services:
     container_name: telemedicina-app
     restart: always
     ports:
-      - "8080:5000"  # Mapear puerto 8080 externo a 5000 interno
+      - "5000:5000"  # Backend en puerto 5000
+      - "3000:3000"  # Frontend en puerto 3000
     environment:
       - NODE_ENV=production
       - PORT=5000

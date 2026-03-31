@@ -11,6 +11,7 @@ export default defineConfig({
     },
     server: {
         port: 3000,
+        host: '0.0.0.0',  // Permitir acceso externo
         allowedHosts: ['.trycloudflare.com', 'all', true],
         proxy: {
             '/api': {
@@ -26,5 +27,9 @@ export default defineConfig({
                 ws: true
             }
         }
+    },
+    preview: {
+        port: 3000,
+        host: '0.0.0.0'  // Para producción
     }
 });

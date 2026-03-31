@@ -26,4 +26,4 @@ ENV NODE_ENV=production
 ENV PORT=5000
 
 # Iniciar aplicación (backend + frontend)
-CMD ["sh", "-c", "npm start & serve -s dist -l 5000"]
+CMD ["sh", "-c", "npm start & serve -s dist -l 3000"]
