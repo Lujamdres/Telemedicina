@@ -19,7 +19,7 @@ RUN npx vite build
 RUN npm install -g serve
 
 # Exponer puertos
-EXPOSE 5000
+EXPOSE 5000 3000
 
 # Variables de entorno
 ENV NODE_ENV=production
