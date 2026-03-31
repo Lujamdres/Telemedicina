@@ -9,11 +9,13 @@ import CalendarioMedico from '../../modulos/citas/html/CalendarioMedico';
 import SalaVideollamada from '../../modulos/videoconferencia/html/SalaVideollamada';
 import HistorialClinico from '../../modulos/historial/html/HistorialClinico';
 import ThemeToggle from './ThemeToggle';
+import AppointmentNotifications from './AppointmentNotifications';
 
 const App = () => {
     return (
         <Router>
             <ThemeToggle />
+            <AppointmentNotifications />
             <Routes>
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/login" element={<Login />} />

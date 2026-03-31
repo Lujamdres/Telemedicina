@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getToken, removeToken } from '../../../assets/js/authSession';
 import { io } from 'socket.io-client';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
@@ -44,7 +45,7 @@ const Dashboard = () => {
     const [citas, setCitas] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const token = localStorage.getItem('token');
+    const token = getToken();
 
     useEffect(() => {
         if (!token) {
@@ -65,7 +66,7 @@ const Dashboard = () => {
                 setLoading(false);
             } catch (error) {
                 console.error('Error al cargar datos:', error);
-                localStorage.removeItem('token');
+                removeToken();
                 navigate('/login');
             }
         };
@@ -109,7 +110,7 @@ const Dashboard = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
+        removeToken();
         navigate('/login');
     };
 

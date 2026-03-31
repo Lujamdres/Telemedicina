@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { getToken } from '../../../assets/js/authSession';
 import '../../../assets/css/global.css';
 
 const NuevaCita = () => {
@@ -10,36 +11,54 @@ const NuevaCita = () => {
     const [formData, setFormData] = useState({ medicoId: '', fechaHora: '', motivoConsulta: '' });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
+    const [userRole, setUserRole] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) {
             navigate('/login');
             return;
         }
 
-        const fetchMedicos = async () => {
+        const init = async () => {
             try {
+                const resProfile = await axios.get('/api/auth/profile', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const role = resProfile.data.data?.role;
+                setUserRole(role || '');
+                if (role !== 'Paciente') {
+                    return;
+                }
                 const res = await axios.get('/api/auth/medicos', {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 setMedicos(res.data.data);
                 if (res.data.data.length > 0) {
-                    setFormData(prev => ({ ...prev, medicoId: res.data.data[0]._id }));
+                    setFormData((prev) => ({ ...prev, medicoId: res.data.data[0]._id }));
                 }
             } catch (err) {
-                console.error("Error al cargar médicos", err);
+                console.error('Error al cargar datos', err);
             }
         };
-        fetchMedicos();
+        init();
     }, [navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (userRole !== 'Paciente') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'No disponible',
+                text: 'Solo los pacientes pueden solicitar citas desde esta pantalla.',
+                confirmButtonColor: '#4f46e5'
+            });
+            return;
+        }
         setLoading(true);
         setError('');
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await axios.post('/api/appointments', formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -55,16 +74,55 @@ const NuevaCita = () => {
                 navigate('/dashboard');
             });
         } catch (err) {
+            const status = err.response?.status;
+            const msg = err.response?.data?.message || 'Error al conectar con el servidor';
+            const hint =
+                status === 403
+                    ? `${msg} Si eres médico, debes confirmar las solicitudes desde el panel; solo un paciente puede crear una nueva cita aquí.`
+                    : msg;
             Swal.fire({
                 icon: 'error',
-                title: 'No se pudo agendar',
-                text: err.response?.data?.message || 'Error al conectar con el servidor',
+                title: status === 403 ? 'Sin permiso' : 'No se pudo agendar',
+                text: hint,
                 confirmButtonColor: '#e74c3c'
             });
         } finally {
             setLoading(false);
         }
     };
+
+    if (userRole === null) {
+        return (
+            <div className="container-sm">
+                <div className="glass-panel">
+                    <p className="text-muted-mb">Cargando…</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (userRole !== 'Paciente') {
+        return (
+            <div className="container-sm">
+                <div className="glass-panel">
+                    <h2>Agendar nueva cita</h2>
+                    <div className="citas-empty-state" style={{ marginTop: '1rem', textAlign: 'left' }}>
+                        <p>
+                            <strong>Solo los pacientes</strong> pueden solicitar una cita desde aquí. El servidor responde
+                            con error 403 si la sesión es de un médico u otro rol.
+                        </p>
+                        <p className="text-muted-mb" style={{ marginBottom: '1rem' }}>
+                            Como médico, revisa y confirma las solicitudes en tu tablero. Como paciente, inicia sesión con
+                            una cuenta de paciente para agendar.
+                        </p>
+                        <button type="button" className="btn" onClick={() => navigate('/dashboard')}>
+                            Volver al panel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container-sm">

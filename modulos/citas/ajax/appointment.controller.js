@@ -22,6 +22,12 @@ async function markAsPerdidaIfNeeded(appointment) {
     }
     if (appointment.estado !== 'Agendada') return false;
     const now = Date.now();
+    if (appointment.esperaExtendidaHasta) {
+        const ext = new Date(appointment.esperaExtendidaHasta).getTime();
+        if (!Number.isNaN(ext) && now < ext) {
+            return false;
+        }
+    }
     const citaMs = new Date(appointment.fechaHora).getTime();
     if (Number.isNaN(citaMs) || now <= citaMs + 5 * 60 * 1000) return false;
 
@@ -35,14 +41,16 @@ async function markAsPerdidaIfNeeded(appointment) {
         return true;
     }
 
-    if (pacienteJoined && !medicoJoined && now > pacienteJoined + 5 * 60 * 1000) {
+    /** 6 min: margen tras el aviso al usuario a los 5 min en videollamada (modal + posible ampliación). */
+    const umbralEsperaOtraParte = 6 * 60 * 1000;
+    if (pacienteJoined && !medicoJoined && now > pacienteJoined + umbralEsperaOtraParte) {
         appointment.estado = 'Perdida';
         appointment.perdidaPorAusenciaDe = 'Medico';
         await appointment.save();
         return true;
     }
 
-    if (medicoJoined && !pacienteJoined && now > medicoJoined + 5 * 60 * 1000) {
+    if (medicoJoined && !pacienteJoined && now > medicoJoined + umbralEsperaOtraParte) {
         appointment.estado = 'Perdida';
         appointment.perdidaPorAusenciaDe = 'Paciente';
         await appointment.save();
@@ -236,6 +244,44 @@ const cancelAppointment = async (req, res) => {
     }
 };
 
+const EXTEND_WAIT_MS = 30 * 60 * 1000;
+
+const extendVideoWait = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const appointment = await Appointment.findById(id);
+        if (!appointment) return res.status(404).json({ success: false, message: 'Cita no encontrada' });
+        if (!canAccessAppointment(req.user, appointment)) {
+            return res.status(403).json({ success: false, message: 'No autorizado' });
+        }
+        if (!['Agendada', 'Programada'].includes(appointment.estado)) {
+            return res.status(400).json({ success: false, message: 'Solo aplica a citas confirmadas' });
+        }
+        if (req.user.role !== 'Paciente' && req.user.role !== 'Medico') {
+            return res.status(403).json({ success: false, message: 'Solo paciente o médico' });
+        }
+        const isPaciente = String(appointment.paciente) === String(req.user.id);
+        const isMedico = String(appointment.medico) === String(req.user.id);
+        if (!isPaciente && !isMedico) {
+            return res.status(403).json({ success: false, message: 'No eres parte de esta cita' });
+        }
+        const myJoinedAt = isPaciente ? appointment.pacienteJoinedAt : appointment.medicoJoinedAt;
+        if (!myJoinedAt) {
+            return res.status(400).json({
+                success: false,
+                message: 'Debes haber entrado a la videollamada para ampliar la espera'
+            });
+        }
+
+        appointment.esperaExtendidaHasta = new Date(Date.now() + EXTEND_WAIT_MS);
+        await appointment.save();
+        notifyCitasRefresh(req, [appointment.medico, appointment.paciente]);
+        res.json({ success: true, data: appointment });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 const getAppointmentByRoom = async (req, res) => {
     try {
         const { roomId } = req.params;
@@ -261,6 +307,7 @@ module.exports = {
     acceptAppointment,
     completeAppointment,
     cancelAppointment,
+    extendVideoWait,
     getAppointmentByRoom,
     markAsPerdidaIfNeeded
 };

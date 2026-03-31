@@ -43,6 +43,10 @@ const appointmentSchema = new mongoose.Schema({
     },
     enlaceVideollamada: {
         type: String // Se puede generar un hash único para la sala
+    },
+    /** Tras elegir "seguir esperando" en videollamada: hasta cuándo se pospone marcar la cita como perdida (máx. 30 min desde la API). */
+    esperaExtendidaHasta: {
+        type: Date
     }
 }, { timestamps: true });
 

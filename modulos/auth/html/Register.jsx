@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import Swal from 'sweetalert2';
+import { setToken } from '../../../assets/js/authSession';
 
 const svgProps = {
     xmlns: 'http://www.w3.org/2000/svg',
@@ -54,7 +55,7 @@ const Register = () => {
             }
 
             const res = await axios.post('/api/auth/register', { nombre, apellido, email, password, role, especialidad });
-            localStorage.setItem('token', res.data.token);
+            setToken(res.data.token);
 
             Swal.fire({
                 icon: 'success',

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { setToken } from '../../../assets/js/authSession';
 import Swal from 'sweetalert2';
 
 const Login = () => {
@@ -18,7 +19,7 @@ const Login = () => {
         try {
             const response = await axios.post('/api/auth/login', credentials);
             if (response.data.success) {
-                localStorage.setItem('token', response.data.token);
+                setToken(response.data.token);
                 navigate('/dashboard');
             }
         } catch (err) {

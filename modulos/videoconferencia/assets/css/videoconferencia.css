@@ -128,3 +128,16 @@
 .chat-btn:hover {
   background: var(--primary-hover);
 }
+
+.videollamada-wait-banner {
+  margin: 0 auto 1rem;
+  max-width: 36rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-dark);
+  background: var(--badge-prog-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  text-align: left;
+}

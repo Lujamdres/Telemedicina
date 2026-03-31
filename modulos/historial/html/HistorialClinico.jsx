@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getToken } from '../../../assets/js/authSession';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
 import '../assets/css/historial.css'; // Estilos modulares
@@ -20,7 +21,7 @@ const HistorialClinico = () => {
     const [archivo, setArchivo] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        const token = getToken();
         if (!token) {
             navigate('/login');
             return;
@@ -48,7 +49,7 @@ const HistorialClinico = () => {
     const handleSubmitRegistro = async (e) => {
         e.preventDefault();
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const formPayload = new FormData();
             formPayload.append('pacienteId', pacienteId);
             formPayload.append('motivoConsulta', formData.motivoConsulta);

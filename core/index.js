@@ -92,6 +92,22 @@ io.on('connection', (socket) => {
             if (isMedico && !appointment.medicoJoinedAt) appointment.medicoJoinedAt = now;
             await appointment.save();
 
+            const updated = await Appointment.findById(appointment._id);
+            if (
+                updated &&
+                updated.pacienteJoinedAt &&
+                updated.medicoJoinedAt &&
+                updated.esperaExtendidaHasta &&
+                ['Agendada', 'Programada'].includes(updated.estado)
+            ) {
+                const extMs = new Date(updated.esperaExtendidaHasta).getTime();
+                if (!Number.isNaN(extMs) && Date.now() <= extMs) {
+                    updated.estado = 'Completada';
+                    await updated.save();
+                    io.to(roomId).emit('appointment-completed', { estado: 'Completada' });
+                }
+            }
+
             io.to(`user:${String(appointment.paciente)}`).emit('citas-refresh');
             io.to(`user:${String(appointment.medico)}`).emit('citas-refresh');
         } catch {

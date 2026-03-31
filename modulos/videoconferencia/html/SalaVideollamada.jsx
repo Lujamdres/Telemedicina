@@ -1,8 +1,20 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getToken } from '../../../assets/js/authSession';
 import { io } from 'socket.io-client';
-import '../assets/css/videoconferencia.css'; // Estilos específicos del módulo
+import Swal from 'sweetalert2';
+import '../assets/css/videoconferencia.css';
+
+const MS_5MIN = 5 * 60 * 1000;
+const MS_6MIN = 6 * 60 * 1000;
+
+function formatCountdown(ms) {
+    if (ms <= 0) return '0:00';
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
 
 const SalaVideollamada = () => {
     const { id: roomId } = useParams();
@@ -16,15 +28,20 @@ const SalaVideollamada = () => {
     const iceCandidatesQueue = useRef([]);
     const messagesEndRef = useRef(null);
     const appointmentPollRef = useRef(null);
+    const appointmentRef = useRef(null);
+    const myProfileRef = useRef(null);
+    const hasShownFiveMinPromptRef = useRef(false);
 
-    // Chat States
     const [messages, setMessages] = useState([]);
     const [currentMsg, setCurrentMsg] = useState('');
     const [myProfile, setMyProfile] = useState(null);
     const [appointment, setAppointment] = useState(null);
     const [absenceText, setAbsenceText] = useState('');
+    const [extendedWaitRemainingMs, setExtendedWaitRemainingMs] = useState(null);
 
-    // Solo usamos STUN servers hiper-confiables.
+    appointmentRef.current = appointment;
+    myProfileRef.current = myProfile;
+
     const rtcConfig = {
         iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
@@ -34,7 +51,19 @@ const SalaVideollamada = () => {
         ]
     };
 
-    // Auto-scroll chat
+    const loadAppointment = useCallback(async () => {
+        const token = getToken();
+        if (!token) return;
+        try {
+            const res = await axios.get(`/api/appointments/room/${roomId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setAppointment(res.data.data);
+        } catch {
+            /* ignore */
+        }
+    }, [roomId]);
+
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -42,10 +71,52 @@ const SalaVideollamada = () => {
     }, [messages]);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
+        if (!appointment?.esperaExtendidaHasta) {
+            setExtendedWaitRemainingMs(null);
+            return;
+        }
+        const tick = () => {
+            const end = new Date(appointment.esperaExtendidaHasta).getTime();
+            setExtendedWaitRemainingMs(Math.max(0, end - Date.now()));
+        };
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [appointment?.esperaExtendidaHasta]);
+
+    useEffect(() => {
+        if (!appointment || !myProfile || !['Agendada', 'Programada', 'Completada'].includes(appointment.estado)) {
+            setAbsenceText('');
+            return;
+        }
+        if (appointment.estado === 'Completada') {
+            setAbsenceText('');
+            return;
+        }
+        const now = Date.now();
+        const pJoin = appointment.pacienteJoinedAt ? new Date(appointment.pacienteJoinedAt).getTime() : null;
+        const mJoin = appointment.medicoJoinedAt ? new Date(appointment.medicoJoinedAt).getTime() : null;
+        let msg = '';
+        if (myProfile.role === 'Medico' && mJoin && !pJoin && now > mJoin + MS_6MIN) {
+            msg = 'Cita perdida por ausencia de paciente';
+        }
+        if (myProfile.role === 'Paciente' && pJoin && !mJoin && now > pJoin + MS_6MIN) {
+            msg = 'Cita perdida por ausencia de médico';
+        }
+        setAbsenceText(msg);
+    }, [appointment, myProfile]);
+
+    useEffect(() => {
+        if (appointment?.estado === 'Completada') {
+            setStreamStatus('Consulta registrada como completada');
+        }
+    }, [appointment?.estado]);
+
+    useEffect(() => {
+        const token = getToken();
         if (!token) {
             navigate('/login');
-            return;
+            return undefined;
         }
 
         socketRef.current = io('/', { transports: ['websocket', 'polling'] });
@@ -53,7 +124,6 @@ const SalaVideollamada = () => {
 
         const initWebRTC = async () => {
             try {
-                // Instanciar perfil para el Chat
                 const resProfile = await axios.get('/api/auth/profile', { headers: { Authorization: `Bearer ${token}` } });
                 setMyProfile(resProfile.data.data);
 
@@ -61,20 +131,18 @@ const SalaVideollamada = () => {
                 if (localVideoRef.current) {
                     localVideoRef.current.srcObject = localStream;
                 }
-                setStreamStatus('Esperando al Especialista/Paciente...');
+                setStreamStatus('Esperando al especialista o al paciente...');
 
                 currentSocket.emit('join-room', { roomId, token });
 
-                const loadAppointment = async () => {
-                    const res = await axios.get(`/api/appointments/room/${roomId}`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    setAppointment(res.data.data);
-                };
                 await loadAppointment();
-                appointmentPollRef.current = setInterval(loadAppointment, 30000);
+                appointmentPollRef.current = setInterval(loadAppointment, 15000);
 
-                currentSocket.on('user-joined', async (userId) => {
+                currentSocket.on('appointment-completed', () => {
+                    loadAppointment();
+                });
+
+                currentSocket.on('user-joined', async () => {
                     setStreamStatus('Usuario conectado, iniciando conexión...');
                     peerConnectionRef.current = createPeerConnection(localStream);
 
@@ -83,7 +151,7 @@ const SalaVideollamada = () => {
                     currentSocket.emit('offer', offer, roomId);
                 });
 
-                currentSocket.on('offer', async (offer, senderId) => {
+                currentSocket.on('offer', async (offer) => {
                     setStreamStatus('Llamada entrante, conectando...');
                     peerConnectionRef.current = createPeerConnection(localStream);
 
@@ -93,19 +161,19 @@ const SalaVideollamada = () => {
                     await peerConnectionRef.current.setLocalDescription(answer);
                     currentSocket.emit('answer', answer, roomId);
 
-                    setStreamStatus('¡Llamada Conectada!'); // Asegura que el Paciente sepa que se conectó
+                    setStreamStatus('¡Llamada conectada!');
                     processIceQueue();
                 });
 
-                currentSocket.on('answer', async (answer, senderId) => {
+                currentSocket.on('answer', async (answer) => {
                     if (peerConnectionRef.current) {
                         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(answer));
-                        setStreamStatus('¡Llamada Conectada!'); // Asegura que el Doctor sepa que se conectó
+                        setStreamStatus('¡Llamada conectada!');
                         processIceQueue();
                     }
                 });
 
-                currentSocket.on('ice-candidate', async (candidate, senderId) => {
+                currentSocket.on('ice-candidate', async (candidate) => {
                     const rtcCandidate = new RTCIceCandidate(candidate);
                     if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
                         try {
@@ -118,23 +186,19 @@ const SalaVideollamada = () => {
                     }
                 });
 
-                // Escuchar Chat
                 currentSocket.on('chat-message', (data) => {
-                    // Si recibimos esto, vino de la otra persona, isLocal es false
-                    setMessages(prev => [...prev, { ...data, isLocal: false }]);
+                    setMessages((prev) => [...prev, { ...data, isLocal: false }]);
                 });
 
-                // Escuchar desconexión del otro usuario
                 currentSocket.on('user-disconnected', () => {
                     setStreamStatus('El otro participante se ha desconectado.');
                     if (remoteVideoRef.current) {
                         remoteVideoRef.current.srcObject = null;
                     }
                 });
-
             } catch (err) {
-                console.error("Error al acceder a dispositivos:", err);
-                setStreamStatus('Error: Permisos de cámara o micrófono denegados o dispositivo ausente.');
+                console.error('Error al acceder a dispositivos:', err);
+                setStreamStatus('Error: permisos de cámara o micrófono denegados o dispositivo ausente.');
             }
         };
 
@@ -146,38 +210,106 @@ const SalaVideollamada = () => {
                 peerConnectionRef.current.close();
             }
             if (localVideoRef.current && localVideoRef.current.srcObject) {
-                localVideoRef.current.srcObject.getTracks().forEach(track => track.stop());
+                localVideoRef.current.srcObject.getTracks().forEach((track) => track.stop());
             }
             if (appointmentPollRef.current) {
                 clearInterval(appointmentPollRef.current);
                 appointmentPollRef.current = null;
             }
         };
-    }, [roomId, navigate]);
+    }, [roomId, navigate, loadAppointment]);
 
     useEffect(() => {
-        if (!appointment || !myProfile || !['Agendada', 'Programada'].includes(appointment.estado)) {
-            setAbsenceText('');
-            return;
-        }
-        const now = Date.now();
-        const pJoin = appointment.pacienteJoinedAt ? new Date(appointment.pacienteJoinedAt).getTime() : null;
-        const mJoin = appointment.medicoJoinedAt ? new Date(appointment.medicoJoinedAt).getTime() : null;
-        let msg = '';
-        if (myProfile.role === 'Medico' && mJoin && !pJoin && now > mJoin + 5 * 60 * 1000) {
-            msg = 'Cita perdida por ausencia de Paciente';
-        }
-        if (myProfile.role === 'Paciente' && pJoin && !mJoin && now > pJoin + 5 * 60 * 1000) {
-            msg = 'Cita perdida por ausencia de Medico';
-        }
-        setAbsenceText(msg);
-    }, [appointment, myProfile]);
+        const checkInterval = setInterval(async () => {
+            const appt = appointmentRef.current;
+            const prof = myProfileRef.current;
+            if (!appt || !prof || hasShownFiveMinPromptRef.current) return;
+            if (!['Agendada', 'Programada'].includes(appt.estado)) return;
+            if (appt.esperaExtendidaHasta) return;
+            if (prof.role !== 'Paciente' && prof.role !== 'Medico') return;
+
+            const pAt = appt.pacienteJoinedAt;
+            const mAt = appt.medicoJoinedAt;
+            const soloPacienteEnSala = Boolean(pAt && !mAt);
+            const soloMedicoEnSala = Boolean(mAt && !pAt);
+            if (!soloPacienteEnSala && !soloMedicoEnSala) return;
+
+            const soyQuienEspera =
+                (prof.role === 'Paciente' && soloPacienteEnSala) ||
+                (prof.role === 'Medico' && soloMedicoEnSala);
+            if (!soyQuienEspera) return;
+
+            const miEntrada = prof.role === 'Paciente' ? pAt : mAt;
+            const elapsed = Date.now() - new Date(miEntrada).getTime();
+            if (elapsed < MS_5MIN) return;
+
+            hasShownFiveMinPromptRef.current = true;
+
+            const token = getToken();
+            const result = await Swal.fire({
+                title: '¿Seguir esperando?',
+                html:
+                    '<p style="text-align:left;margin:0 0 0.5rem">Han pasado <strong>5 minutos</strong> sin que se una la contraparte.</p>' +
+                    '<p style="text-align:left;margin:0;font-size:0.92rem;color:#64748b">Puedes ampliar la espera <strong>hasta 30 minutos</strong> (contador en pantalla) o cancelar la cita. Si la contraparte entra en ese plazo, la consulta se registrará como <strong>completada</strong>.</p>',
+                icon: 'question',
+                showCancelButton: true,
+                focusCancel: false,
+                confirmButtonText: 'Sí, seguir esperando',
+                cancelButtonText: 'No, cancelar cita',
+                confirmButtonColor: '#4f46e5',
+                cancelButtonColor: '#dc2626',
+                allowOutsideClick: false
+            });
+
+            if (!result.isConfirmed) {
+                try {
+                    await axios.put(
+                        `/api/appointments/${appt._id}/cancel`,
+                        {
+                            motivoCancelacion:
+                                'El usuario decidió no continuar esperando en la videollamada tras el aviso de los 5 minutos.'
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                    await Swal.fire({
+                        icon: 'info',
+                        title: 'Cita cancelada',
+                        text: 'Puedes solicitar otra cita desde el panel.'
+                    });
+                } catch (e) {
+                    hasShownFiveMinPromptRef.current = false;
+                    await Swal.fire({
+                        icon: 'error',
+                        title: 'No se pudo cancelar',
+                        text: e.response?.data?.message || 'Intenta de nuevo'
+                    });
+                    return;
+                }
+                navigate('/dashboard');
+                return;
+            }
+
+            try {
+                await axios.put(`/api/appointments/${appt._id}/extend-wait`, {}, { headers: { Authorization: `Bearer ${token}` } });
+                await loadAppointment();
+            } catch (e) {
+                hasShownFiveMinPromptRef.current = false;
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'No se pudo ampliar la espera',
+                    text: e.response?.data?.message || 'Intenta de nuevo'
+                });
+            }
+        }, 2000);
+
+        return () => clearInterval(checkInterval);
+    }, [loadAppointment, navigate, roomId]);
 
     const processIceQueue = () => {
         if (peerConnectionRef.current && peerConnectionRef.current.remoteDescription) {
             while (iceCandidatesQueue.current.length > 0) {
                 const candidate = iceCandidatesQueue.current.shift();
-                peerConnectionRef.current.addIceCandidate(candidate).catch(e => console.error(e));
+                peerConnectionRef.current.addIceCandidate(candidate).catch((e) => console.error(e));
             }
         }
     };
@@ -185,7 +317,7 @@ const SalaVideollamada = () => {
     const createPeerConnection = (stream) => {
         const pc = new RTCPeerConnection(rtcConfig);
 
-        stream.getTracks().forEach(track => {
+        stream.getTracks().forEach((track) => {
             pc.addTrack(track, stream);
         });
 
@@ -204,11 +336,34 @@ const SalaVideollamada = () => {
         return pc;
     };
 
-    const handleColgar = () => {
+    const handleColgar = async () => {
+        const token = getToken();
+        const appt = appointmentRef.current;
+        try {
+            if (
+                token &&
+                appt?._id &&
+                ['Agendada', 'Programada'].includes(appt.estado) &&
+                appt.esperaExtendidaHasta
+            ) {
+                const ext = new Date(appt.esperaExtendidaHasta).getTime();
+                if (!Number.isNaN(ext) && Date.now() < ext && appt.estado !== 'Completada') {
+                    await axios.put(
+                        `/api/appointments/${appt._id}/cancel`,
+                        {
+                            motivoCancelacion:
+                                'Salida de la videollamada durante el periodo de espera ampliada (30 min), sin completar la consulta.'
+                        },
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
+            }
+        } catch (e) {
+            console.error(e);
+        }
         navigate('/dashboard');
     };
 
-    // --- Lógica del Chat ---
     const handleSendMessage = (e) => {
         e.preventDefault();
         if (!currentMsg.trim() || !myProfile) return;
@@ -218,21 +373,39 @@ const SalaVideollamada = () => {
             text: currentMsg
         };
 
-        // Emitir vía socket al otro navegador
         socketRef.current.emit('chat-message', messageData, roomId);
 
-        // Agregarlo yo mismo localmente de inmediato
-        setMessages(prev => [...prev, { ...messageData, isLocal: true }]);
+        setMessages((prev) => [...prev, { ...messageData, isLocal: true }]);
         setCurrentMsg('');
     };
+
+    const soloPacienteEsperando = Boolean(appointment?.pacienteJoinedAt && !appointment?.medicoJoinedAt);
+    const soloMedicoEsperando = Boolean(appointment?.medicoJoinedAt && !appointment?.pacienteJoinedAt);
+    const soyQuienEsperaEnSala =
+        myProfile &&
+        (myProfile.role === 'Paciente' || myProfile.role === 'Medico') &&
+        ((myProfile.role === 'Paciente' && soloPacienteEsperando) ||
+            (myProfile.role === 'Medico' && soloMedicoEsperando));
+
+    const showExtendedBanner =
+        soyQuienEsperaEnSala &&
+        appointment?.esperaExtendidaHasta &&
+        ['Agendada', 'Programada'].includes(appointment.estado) &&
+        extendedWaitRemainingMs != null;
 
     return (
         <div className="container-lg">
             <div className="glass-panel text-center">
-                <h2 className="mb-1">Teleconsulta en Vivo</h2>
+                <h2 className="mb-1">Teleconsulta en vivo</h2>
                 <div className="badge badge-Programada mb-2" style={{ display: 'inline-block' }}>
                     {streamStatus}
                 </div>
+                {showExtendedBanner && (
+                    <p className="videollamada-wait-banner">
+                        Espera ampliada: <strong>{formatCountdown(extendedWaitRemainingMs)}</strong> restantes. Si la
+                        contraparte entra, la cita pasará a <strong>completada</strong>.
+                    </p>
+                )}
                 {absenceText && (
                     <button type="button" className="btn btn-danger btn-sm-auto" style={{ margin: '0 auto 1rem' }}>
                         {absenceText}
@@ -251,14 +424,27 @@ const SalaVideollamada = () => {
                     </div>
                 </div>
 
-                {/* BOTON DE COLGAR */}
-                <button className="btn btn-danger" style={{ maxWidth: '200px', display: 'block', margin: '0 auto' }} onClick={handleColgar}>Cerrar Teleconsulta</button>
+                <button
+                    className="btn btn-danger"
+                    style={{ maxWidth: '220px', display: 'block', margin: '0 auto' }}
+                    onClick={handleColgar}
+                >
+                    Cerrar teleconsulta
+                </button>
 
-                {/* ÁREA DE CHAT EN VIVO */}
                 <div className="chat-container">
                     <div className="chat-messages">
                         {messages.length === 0 ? (
-                            <p style={{ textAlign: 'center', color: '#94a3b8', margin: 'auto', fontSize: '0.9rem' }}>El chat está vacío. Escribe algo para saludar.</p>
+                            <p
+                                style={{
+                                    textAlign: 'center',
+                                    color: 'var(--text-muted)',
+                                    margin: 'auto',
+                                    fontSize: '0.9rem'
+                                }}
+                            >
+                                El chat está vacío. Escribe algo para saludar.
+                            </p>
                         ) : (
                             messages.map((m, i) => (
                                 <div key={i} className={`chat-msg ${m.isLocal ? 'local' : 'remote'}`}>
@@ -273,11 +459,13 @@ const SalaVideollamada = () => {
                         <input
                             type="text"
                             className="chat-input"
-                            placeholder="Escribe tu mensaje interactivo aquí..."
+                            placeholder="Escribe tu mensaje aquí..."
                             value={currentMsg}
-                            onChange={e => setCurrentMsg(e.target.value)}
+                            onChange={(e) => setCurrentMsg(e.target.value)}
                         />
-                        <button type="submit" className="chat-btn">Enviar</button>
+                        <button type="submit" className="chat-btn">
+                            Enviar
+                        </button>
                     </form>
                 </div>
             </div>

@@ -536,3 +536,100 @@ html[data-theme="light"] {
   }
 }
 
+/* --- Notificaciones in-app (citas) --- */
+.app-toast-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10050;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: min(22rem, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.app-toast-stack .app-toast {
+  pointer-events: auto;
+}
+
+.app-toast {
+  position: relative;
+  padding: 0.85rem 2.25rem 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  box-shadow: var(--card-hover-shadow);
+  animation: app-toast-in 0.28s ease-out;
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.app-toast-text {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-dark);
+  text-align: left;
+}
+
+.app-toast--success {
+  border-left: 4px solid var(--success);
+}
+
+.app-toast--warning {
+  border-left: 4px solid #d97706;
+}
+
+.app-toast--danger {
+  border-left: 4px solid var(--danger);
+}
+
+.app-toast--info {
+  border-left: 4px solid var(--primary);
+}
+
+.app-toast-close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.app-toast-close:hover {
+  background: var(--btn-secondary-hover);
+  color: var(--text-dark);
+}
+
+.app-toast-action {
+  margin-top: 0.65rem;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .app-toast-stack {
+    left: 0.75rem;
+    right: 0.75rem;
+    max-width: none;
+  }
+}
+

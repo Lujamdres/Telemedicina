@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { getToken, removeToken } from '../../../assets/js/authSession';
 import { io } from 'socket.io-client';
 import Swal from 'sweetalert2';
 import '../../../assets/css/global.css';
@@ -45,7 +46,7 @@ function badgeTextoCita(c) {
 
 const CalendarioMedico = () => {
     const navigate = useNavigate();
-    const token = localStorage.getItem('token');
+    const token = getToken();
     const [user, setUser] = useState(null);
     const [citas, setCitas] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -113,7 +114,7 @@ const CalendarioMedico = () => {
                 const resCitas = await axios.get('/api/appointments', config);
                 setCitas(resCitas.data.data);
             } catch {
-                localStorage.removeItem('token');
+                removeToken();
                 navigate('/login');
             } finally {
                 setLoading(false);
