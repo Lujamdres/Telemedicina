@@ -7,7 +7,7 @@ const baseURL = import.meta.env.PROD
 
 const api = axios.create({
   baseURL,
-  withCredentials: true,
+  withCredentials: false,  // Cambiado a false
 });
 
 export default api;

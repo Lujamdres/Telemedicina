@@ -58,7 +58,7 @@ const Register = () => {
             }
 
             setSubmitting(true);
-            const res = await api.post('/auth/register', { nombre, apellido, email, password, role, especialidad });
+            const res = await api.post('/api/auth/register', { nombre, apellido, email, password, role, especialidad });
             setToken(res.data.token);
 
             Swal.fire({
