@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # Backend + Frontend (usando MongoDB Atlas externo)
+  app:
+    build: .
+    container_name: telemedicina-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - MONGODB_URI=mongodb+srv://fm159851_db_user:YljK3osUUHZGCgal@medconnect.mcj9hxa.mongodb.net/test?appName=MedConnect
+      - JWT_SECRET=telemedicina_jwt_secret_2026_fm159851
+      - CORS_ORIGIN=*
+    volumes:
+      - ./uploads:/app/uploads
