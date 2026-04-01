@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const fs = require('fs');
 const cors = require('cors');
 const path = require('path');
 const jwt = require('jsonwebtoken');
@@ -44,6 +45,23 @@ app.use('/api/auth', authRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/historial', historialRoutes);
 app.use('/api/recetas', recetaRoutes);
+
+// SPA (Vite build): mismo origen que API y Socket.io en producción / Docker
+const distPath = path.join(__dirname, '../dist');
+if (fs.existsSync(distPath)) {
+    app.use(express.static(distPath));
+    app.get('*', (req, res, next) => {
+        if (req.method !== 'GET') return next();
+        if (
+            req.path.startsWith('/api') ||
+            req.path.startsWith('/uploads') ||
+            req.path.startsWith('/socket.io')
+        ) {
+            return next();
+        }
+        res.sendFile(path.join(distPath, 'index.html'));
+    });
+}
 
 // Configuración de WebRTC / Señalización con Socket.io
 io.on('connection', (socket) => {

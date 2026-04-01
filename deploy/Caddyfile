@@ -1,0 +1,28 @@
+# MedConnect — Caddy v2: proxy a la aplicación en 127.0.0.1:5000
+#
+# Requisito: Docker con puertos "127.0.0.1:5000:5000" (no exponer 5000 a toda la red).
+#
+# Probar sintaxis:
+#   caddy validate --config deploy/Caddyfile
+#
+# Ejecutar (desarrollo / prueba):
+#   caddy run --config deploy/Caddyfile
+#
+# En servidor: copia a /etc/caddy/Caddyfile y usa systemd (caddy.service).
+
+{
+	# Descomenta para recibir avisos de Let's Encrypt (solo si usas bloque con dominio)
+	# email tu-correo@dominio.com
+}
+
+# HTTP en puerto 80 — válido para demo o detrás de otro balanceador
+:80 {
+	reverse_proxy 127.0.0.1:5000
+}
+
+# HTTPS automático: comenta el bloque ":80" de arriba y descomenta el siguiente
+# con tu FQDN (DNS A/AAAA debe apuntar a esta máquina antes de arrancar Caddy).
+#
+# medconnect.tu-dominio.com {
+# 	reverse_proxy 127.0.0.1:5000
+# }

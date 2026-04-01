@@ -1,0 +1,41 @@
+# Perfil "local-mongo": MongoDB dentro de Docker (solo si NO usas Atlas).
+# Con Atlas: define MONGODB_URI en .env y ejecuta `docker compose up` (sin perfil).
+
+services:
+  mongo:
+    image: mongo:7
+    profiles:
+      - local-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  app:
+    build: .
+    restart: unless-stopped
+    # VPS con Nginx/Caddy delante: usar "127.0.0.1:5000:5000" (ver docs/VPS_DEMOSTRACION.md)
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      # .env: cadena de Atlas, o sin definir + perfil local-mongo para mongo://mongo:27017/...
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/telemedicina_lui}
+      JWT_SECRET: ${JWT_SECRET:-cambiar_secreto_jwt_en_produccion}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-1d}
+    depends_on:
+      mongo:
+        condition: service_healthy
+        required: false
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  mongo_data:
+  uploads_data:
