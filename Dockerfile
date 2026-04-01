@@ -24,7 +24,7 @@ COPY core ./core
 COPY modulos ./modulos
 COPY assets ./assets
 COPY index.html ./
-COPY public ./public
+# public/ se integra en dist/ en la fase de build (Vite); no hace falta copiarlo al runtime
 
 RUN mkdir -p uploads
 
