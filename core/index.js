@@ -45,16 +45,6 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/historial', historialRoutes);
 app.use('/api/recetas', recetaRoutes);
 
-// Servir frontend estático en producción
-if (process.env.NODE_ENV === 'production') {
-    app.use(express.static(path.join(__dirname, '../dist')));
-    
-    // Para cualquier ruta que no sea API, servir el index.html
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(__dirname, '../dist/index.html'));
-    });
-}
-
 // Configuración de WebRTC / Señalización con Socket.io
 io.on('connection', (socket) => {
     console.log('Nuevo cliente conectado:', socket.id);
