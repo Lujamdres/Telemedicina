@@ -8,7 +8,7 @@ services:
     restart: always
     ports:
       - "8080:5000"  # Backend en puerto 8080 externo
-      - "3000:3000"  # Frontend en puerto 3000
+      - "9000:3000"  # Frontend en puerto 9000 externo
     environment:
       - NODE_ENV=production
       - PORT=5000
